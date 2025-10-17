@@ -4,20 +4,20 @@
 
 ## 📋 Project Overview
 
-This project implements a **Super-Resolution** model using Convolutional Neural Networks (CNN) to enhance image quality on the CIFAR-10 dataset. The trained model can convert low-quality images (16×16 pixels) to high-quality images (32×32 pixels).
+This project implements a **Super-Resolution** model using Convolutional Neural Networks (CNN) to enhance image quality on the CIFAR-10 dataset. The trained model can convert low-quality images (16×16 pixels) to high-quality images (32×32 pixels) with impressive performance metrics.
 
 ### 🎯 Project Goals
 - Convert Low-Resolution images to High-Resolution
 - Improve visual quality of images
 - Preserve structure and content of original images
-- Evaluate model performance using PSNR and SSIM metrics
+- Achieve high PSNR and SSIM scores for quality assessment
 
 ## 🗂 Project Structure
 
 ```
 Super-Resolution-CNN-CIFAR10/
 ├── model/
-│   └── best_sr_model.keras          # Final trained model
+│   └── best_sr_model.keras          # Final trained model (225,027 parameters)
 ├── notebooks/
 │   └── model_training.jpynb         # Model training notebook
 ├── plots/                           # Generated plots
@@ -43,54 +43,93 @@ This project uses the **CIFAR-10** dataset which contains 60,000 32×32 color im
 
 ### Data Preprocessing
 - Normalize pixel values to range [0, 1]
-- Convert 32×32 images to 16×16 to create Low-Resolution input
+- Convert 32×32 images to 16×16 using bicubic interpolation
 - Split data into training, validation, and test sets
 
 ## 🏗 Model Architecture
 
-The model uses a CNN architecture with the following components:
+The model uses an efficient CNN architecture with the following components:
 
-### Main Blocks:
-1. **Input**: Low-Resolution images (16×16×3)
-2. **Feature Extraction**: Two convolutional layers with 64 filters
-3. **Upsampling**: Conv2DTranspose layer for dimension increase
-4. **Quality Refinement**: Two additional convolutional layers
-5. **Output**: Super-Resolution image (32×32×3)
+### Model Summary:
+```
+Model: "functional"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Layer (type)                    ┃ Output Shape           ┃       Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ input_layer (InputLayer)        │ (None, 16, 16, 3)      │             0 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d (Conv2D)                 │ (None, 16, 16, 64)     │         1,792 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_1 (Conv2D)               │ (None, 16, 16, 64)     │        36,928 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_transpose                │ (None, 32, 32, 128)    │        73,856 │
+│ (Conv2DTranspose)               │                        │               │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_2 (Conv2D)               │ (None, 32, 32, 64)     │        73,792 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_3 (Conv2D)               │ (None, 32, 32, 64)     │        36,928 │
+├─────────────────────────────────┼────────────────────────┼───────────────┤
+│ conv2d_4 (Conv2D)               │ (None, 32, 32, 3)      │         1,731 │
+└─────────────────────────────────┴────────────────────────┴───────────────┘
+ Total params: 225,027 (879.01 KB)
+ Trainable params: 225,027 (879.01 KB)
+ Non-trainable params: 0 (0.00 B)
+```
+
+### Architecture Details:
+- **Feature Extraction**: Two convolutional layers (64 filters each)
+- **Upsampling**: Conv2DTranspose layer with stride 2 for 2× upscaling
+- **Refinement**: Two additional convolutional layers for quality enhancement
+- **Output**: Final convolution to produce RGB image with sigmoid activation
 
 ### Key Parameters:
-- Activation function: ReLU (except output using sigmoid)
-- Loss function: MSE (Mean Squared Error)
-- Optimizer: Adam
-- Evaluation metrics: MAE, SSIM, PSNR
+- **Activation function**: ReLU (except output using sigmoid)
+- **Loss function**: MSE (Mean Squared Error)
+- **Optimizer**: Adam
+- **Evaluation metrics**: MAE, SSIM, PSNR
 
 ## 🚀 Model Training
 
 ### Training Configuration:
 - **Batch size**: 64
 - **Epochs**: 20
-- **Callbacks**:
-  - Early Stopping to prevent overfitting
-  - ReduceLROnPlateau for learning rate adjustment
-  - ModelCheckpoint to save best model
+- **Initial Learning Rate**: Adaptive (reduced during training)
+- **Training Time**: ~15 seconds per epoch
+
+### Advanced Callbacks:
+- **Early Stopping**: Patience of 3 epochs, restores best weights
+- **ReduceLROnPlateau**: Reduces learning rate by factor of 0.5 when validation loss plateaus
+- **ModelCheckpoint**: Saves best model based on validation loss
 
 ### Training Progress:
 ![Loss History](./plots/plot-loss-history-plots.png)
 
-The chart above shows the reduction of training and validation loss across different epochs.
+The training showed consistent improvement with final metrics:
+- **Training Loss**: 0.0019
+- **Validation Loss**: 0.00192
+- **PSNR**: ~28.0 dB
+- **SSIM**: ~0.907
 
-## 📈 Results and Evaluation
+## 📈 Performance Results
 
-### Evaluation Metrics:
-- **PSNR (Peak Signal-to-Noise Ratio)**: Image quality metric
-- **SSIM (Structural Similarity Index)**: Structural similarity metric
-- **MAE (Mean Absolute Error)**: Mean absolute error
+### Final Evaluation Metrics:
 
-### Model Performance:
-The trained model has achieved satisfactory results in enhancing image quality, with generated images being visually similar to the original High-Resolution images.
+| Metric         | Training | Validation | Test Set |
+| -------------- | -------- | ---------- | -------- |
+| **PSNR**       | 27.99 dB | 27.99 dB   | 28.13 dB |
+| **SSIM**       | 0.9074   | 0.9075     | 0.9077   |
+| **MAE**        | 0.0284   | 0.0285     | 0.0280   |
+| **Loss (MSE)** | 0.0019   | 0.00192    | 0.0019   |
 
-## 🖼 Output Samples
+### Detailed Test Set Performance:
+- **PSNR**: 28.13 dB ± 2.83 (higher is better)
+- **SSIM**: 0.9077 ± 0.0395 (closer to 1.0 is better)
 
-Below are samples of the model's output:
+These results demonstrate excellent performance in super-resolution tasks, with the model successfully reconstructing high-quality images from low-resolution inputs.
+
+## 🖼 Visual Results
+
+Below are samples of the model's output showing the transformation pipeline:
 
 ![Sample 1](./plots/sample-predict-and-show-triplets1.png)
 ![Sample 2](./plots/sample-predict-and-show-triplets2.png)
@@ -98,47 +137,75 @@ Below are samples of the model's output:
 ![Sample 4](./plots/sample-predict-and-show-triplets4.png)
 ![Sample 5](./plots/sample-predict-and-show-triplets5.png)
 
-Each sample includes three images:
-- **Left**: Low-Resolution image (model input)
-- **Middle**: Super-Resolution image (model output)
-- **Right**: High-Resolution image (ground truth)
+Each sample demonstrates:
+- **Left**: Low-Resolution input (16×16) - Model input
+- **Middle**: Super-Resolution output (32×32) - Model prediction
+- **Right**: High-Resolution target (32×32) - Ground truth
 
-## 🛠 Setup and Usage
+## 🛠 Technical Implementation
 
 ### Requirements:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Running the Project:
-1. Clone the repository
-2. Install requirements
-3. Run the `model_training.jpynb` notebook to train the model
-4. Use the trained model for inference
+### Key Dependencies:
+- TensorFlow 2.x
+- NumPy
+- Matplotlib
+- scikit-learn
 
-### Using the Trained Model:
+### Training Process:
+```python
+history = model.fit(
+    train_ds,
+    epochs=20,
+    validation_data=val_ds,
+    callbacks=[early_stopping, reduce_lr, model_checkpoint],
+    verbose=1
+)
+```
+
+### Model Usage:
 ```python
 from tensorflow.keras.models import load_model
 
-# Load the model
-model = load_model('model/best_sr_model.keras')
+# Load the trained model
+model = load_model('model/best_sr_model.keras',
+                  custom_objects={"psnr_metric": psnr_metric, "ssim_metric": ssim_metric})
 
-# Predict on new images
+# Generate super-resolution images
 sr_images = model.predict(lr_images)
 ```
-
 **⚠️ Note: If you are not using Google Colab, GPU processing settings may differ:**
 
 - **In Google Colab**: Uses Tesla T4 or similar GPU by default
 - **In local environment**: Requires manual installation of CUDA and cuDNN drivers
 - **Memory settings**: You may need to reduce batch size on systems with less GPU memory
 
-## 💡 Key Features
+## 💡 Key Features & Innovations
 
-- **High Performance**: Model capable of producing quality images in reasonable time
-- **Simple Implementation**: Straightforward and understandable architecture
-- **Comprehensive Evaluation**: Multiple metrics for quality assessment
-- **Complete Documentation**: Visual samples and analytical charts provided
+### 🎯 Efficient Architecture
+- **Compact Design**: Only 225K parameters making it lightweight
+- **Progressive Upscaling**: Uses transposed convolution for 2× upsampling
+- **Feature Preservation**: Multiple convolutional layers maintain image details
+
+### 📊 Advanced Evaluation
+- **Multiple Metrics**: Comprehensive assessment using PSNR, SSIM, and MAE
+- **Visual Validation**: Side-by-side comparison of LR, SR, and HR images
+- **Statistical Analysis**: Mean and standard deviation reporting
+
+### ⚡ Optimization Techniques
+- **Adaptive Learning**: Dynamic learning rate adjustment
+- **Early Stopping**: Prevents overfitting while maintaining performance
+- **Best Model Saving**: Automatic preservation of optimal weights
+
+## 🎉 Achievements
+
+- **Successfully implemented** a CNN-based super-resolution model
+- **Achieved high-quality results** with PSNR > 28 dB and SSIM > 0.90
+- **Efficient training** with fast convergence (20 epochs)
+- **Comprehensive evaluation** with both quantitative and qualitative analysis
 
 
 ## 👨‍💻 Author
@@ -149,9 +216,6 @@ sr_images = model.predict(lr_images)
 - **linkedin**: [masoud-ghasemi](https://www.linkedin.com/in/masoud-ghasemi-748412381)
 - **Telegram**: [@Masoud_Ghasemi_sorna_fast](https://t.me/Masoud_Ghasemi_sorna_fast)
 
-
-
 ## 📄 License
 
 This project is released under the [MIT License](LICENSE).
-
